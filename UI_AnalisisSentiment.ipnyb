@@ -1,0 +1,364 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/lynns04/sentimen-esg/blob/main/UI_AnalisisSentiment.ipnyb\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "2aEFbJgZHyCl"
+      },
+      "source": [
+        "# 1. Install Requirement"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 1,
+      "metadata": {
+        "id": "mL6pXX3tHPXM"
+      },
+      "outputs": [],
+      "source": [
+        "!pip install streamlit -q\n",
+        "\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "_XZrwR8bagu6"
+      },
+      "source": []
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "J6GkhJidsJwI"
+      },
+      "outputs": [],
+      "source": [
+        "%%writefile app.py\n",
+        "import streamlit as st\n",
+        "from transformers import pipeline\n",
+        "import pandas as pd\n",
+        "\n",
+        "# Memuat pipeline analisis sentimen dari transformers\n",
+        "sentiment_pipeline = pipeline(\"sentiment-analysis\")\n",
+        "\n",
+        "# Sidebar for navigation\n",
+        "st.sidebar.title(\"Menu\")\n",
+        "menu = st.sidebar.radio(\"Pilih Menu\", [\"Prediksi Kalimat\", \"Prediksi File\"])\n",
+        "\n",
+        "if menu == \"Prediksi Kalimat\":\n",
+        "    st.title(\"Analisis Sentimen untuk Kalimat\")\n",
+        "    user_input = st.text_area(\"Masukkan teks untuk analisis sentimen\")\n",
+        "\n",
+        "    if user_input:\n",
+        "        # Melakukan analisis sentimen\n",
+        "        result = sentiment_pipeline(user_input)\n",
+        "        sentiment = result[0]['label']\n",
+        "        confidence = result[0]['score']\n",
+        "        # Menampilkan hasil analisis sentimen\n",
+        "        st.write(f\"*Sentimen:* {sentiment}\")\n",
+        "        st.write(f\"*Confidence:* {confidence}\")\n",
+        "\n",
+        "elif menu == \"Prediksi File\":\n",
+        "    st.title(\"Analisis Sentimen untuk File\")\n",
+        "    uploaded_file = st.file_uploader(\"Upload file untuk analisis sentimen\", type=[\"txt\", \"csv\"])\n",
+        "\n",
+        "    if uploaded_file:\n",
+        "        if uploaded_file.type == \"text/plain\":\n",
+        "            # Membaca file teks\n",
+        "            text = uploaded_file.read().decode(\"utf-8\")\n",
+        "            # Melakukan analisis sentimen pada teks\n",
+        "            result = sentiment_pipeline(text)\n",
+        "            sentiment = result[0]['label']\n",
+        "            confidence = result[0]['score']\n",
+        "            # Menampilkan hasil analisis sentimen\n",
+        "            st.write(f\"*Sentimen:* {sentiment}\")\n",
+        "            st.write(f\"*Confidence:* {confidence}\")\n",
+        "        elif uploaded_file.type == \"text/csv\":\n",
+        "            # Membaca file CSV\n",
+        "            df = pd.read_csv(uploaded_file)\n",
+        "            # Memastikan kolom pertama adalah teks untuk analisis\n",
+        "            if df.shape[1] > 0:\n",
+        "                df['sentiment'] = df.iloc[:, 0].apply(lambda x: sentiment_pipeline(str(x))[0]['label'])\n",
+        "                df['confidence'] = df.iloc[:, 0].apply(lambda x: sentiment_pipeline(str(x))[0]['score'])\n",
+        "                st.write(df)\n",
+        "            else:\n",
+        "                st.error(\"File CSV tidak memiliki kolom yang sesuai untuk analisis sentimen.\")\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import streamlit as st\n",
+        "from transformers import pipeline\n",
+        "import pandas as pd\n",
+        "from PIL import Image, ImageOps\n",
+        "\n",
+        "# Memuat pipeline analisis sentimen dari transformers\n",
+        "sentiment_pipeline = pipeline(\"sentiment-analysis\")\n",
+        "\n",
+        "# Function to create a circular image\n",
+        "def make_circular_image(image_path):\n",
+        "    img = Image.open(image_path).convert(\"RGBA\")\n",
+        "    mask = Image.new(\"L\", img.size, 0)\n",
+        "    draw = ImageDraw.Draw(mask)\n",
+        "    draw.ellipse((0, 0) + img.size, fill=255)\n",
+        "    output = ImageOps.fit(img, mask.size, centering=(0.5, 0.5))\n",
+        "    output.putalpha(mask)\n",
+        "    return output\n",
+        "\n",
+        "# Sidebar for navigation\n",
+        "st.sidebar.title(\"Menu\")\n",
+        "menu = st.sidebar.radio(\"Pilih Menu\", [\"Deskripsi\", \"Prediksi\", \"Our Team\"])\n",
+        "\n",
+        "if menu == \"Deskripsi\":\n",
+        "    st.image(\"Logofix.png\", width=200)\n",
+        "    st.title(\"Deskripsi Proyek\")\n",
+        "    st.write(\"\"\"\n",
+        "    ### Proyek Analisis Sentimen\n",
+        "    Proyek ini bertujuan untuk menganalisis sentimen dari teks yang diberikan.\n",
+        "    Dengan menggunakan model pembelajaran mesin dari transformers, kita dapat mengidentifikasi sentimen positif, negatif, atau netral dari teks yang diinput.\n",
+        "    \"\"\")\n",
+        "    st.image(\"poster.png\", use_column_width=True)\n",
+        "\n",
+        "elif menu == \"Prediksi\":\n",
+        "    st.title(\"Analisis Sentimen\")\n",
+        "\n",
+        "    st.header(\"Prediksi Kalimat\")\n",
+        "    user_input = st.text_area(\"Masukkan teks untuk analisis sentimen\")\n",
+        "\n",
+        "    if user_input:\n",
+        "        # Melakukan analisis sentimen\n",
+        "        result = sentiment_pipeline(user_input)\n",
+        "        sentiment = result[0]['label']\n",
+        "        confidence = result[0]['score']\n",
+        "        # Menampilkan hasil analisis sentimen\n",
+        "        st.write(f\"*Sentimen:* {sentiment}\")\n",
+        "        st.write(f\"*Confidence:* {confidence}\")\n",
+        "\n",
+        "    st.header(\"Prediksi File\")\n",
+        "    uploaded_file = st.file_uploader(\"Upload file untuk analisis sentimen\", type=[\"txt\", \"csv\"])\n",
+        "\n",
+        "    if uploaded_file:\n",
+        "        if uploaded_file.type == \"text/plain\":\n",
+        "            # Membaca file teks\n",
+        "            text = uploaded_file.read().decode(\"utf-8\")\n",
+        "            # Melakukan analisis sentimen pada teks\n",
+        "            result = sentiment_pipeline(text)\n",
+        "            sentiment = result[0]['label']\n",
+        "            confidence = result[0]['score']\n",
+        "            # Menampilkan hasil analisis sentimen\n",
+        "            st.write(f\"*Sentimen:* {sentiment}\")\n",
+        "            st.write(f\"*Confidence:* {confidence}\")\n",
+        "        elif uploaded_file.type == \"text/csv\":\n",
+        "            # Membaca file CSV\n",
+        "            df = pd.read_csv(uploaded_file)\n",
+        "            # Memastikan kolom pertama adalah teks untuk analisis\n",
+        "            if df.shape[1] > 0:\n",
+        "                df['sentiment'] = df.iloc[:, 0].apply(lambda x: sentiment_pipeline(str(x))[0]['label'])\n",
+        "                df['confidence'] = df.iloc[:, 0].apply(lambda x: sentiment_pipeline(str(x))[0]['score'])\n",
+        "                st.write(df)\n",
+        "            else:\n",
+        "                st.error(\"File CSV tidak memiliki kolom yang sesuai untuk analisis sentimen.\")\n",
+        "\n",
+        "elif menu == \"Our Team\":\n",
+        "    st.title(\"Our Team Gcoder\")\n",
+        "    col1, col2 = st.columns(2)\n",
+        "\n",
+        "    with col1:\n",
+        "        st.image(make_circular_image(\"team1.png\"), use_column_width=True)\n",
+        "        st.write(\"**John Doe**\")\n",
+        "        st.write(\"Data Scientist with 5 years of experience in sentiment analysis and NLP.\")\n",
+        "\n",
+        "        st.image(make_circular_image(\"team3.png\"), use_column_width=True)\n",
+        "        st.write(\"**Alice Johnson**\")\n",
+        "        st.write(\"Researcher focused on developing state-of-the-art NLP models.\")\n",
+        "\n",
+        "    with col2:\n",
+        "        st.image(make_circular_image(\"team2.jpg\"), use_column_width=True)\n",
+        "        st.write(\"**Jane Smith**\")\n",
+        "        st.write(\"Machine Learning Engineer specializing in deploying models at scale.\")\n",
+        "\n",
+        "        st.image(make_circular_image(\"team4.png\"), use_column_width=True)\n",
+        "        st.write(\"**Alice Johnson**\")\n",
+        "        st.write(\"Researcher focused on developing state-of-the-art NLP models.\")\n"
+      ],
+      "metadata": {
+        "id": "KSlhUt4KnQo4"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!wget -q -O - ipv4.icanhazip.com"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "_2hD2kwQl9SI",
+        "outputId": "b9b29f96-bd06-4e89-ca13-21b78e9b7fcf"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "35.196.165.164\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "! streamlit run app.py & npx localtunnel --port 8501"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "DheS29Xvuh6j",
+        "outputId": "b2e04310-6185-4b6f-a54c-a088c7004ca7"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "\n",
+            "Collecting usage statistics. To deactivate, set browser.gatherUsageStats to false.\n",
+            "\u001b[0m\n",
+            "\u001b[0m\n",
+            "\u001b[34m\u001b[1m  You can now view your Streamlit app in your browser.\u001b[0m\n",
+            "\u001b[0m\n",
+            "\u001b[34m  Local URL: \u001b[0m\u001b[1mhttp://localhost:8501\u001b[0m\n",
+            "\u001b[34m  Network URL: \u001b[0m\u001b[1mhttp://172.28.0.12:8501\u001b[0m\n",
+            "\u001b[34m  External URL: \u001b[0m\u001b[1mhttp://35.196.165.164:8501\u001b[0m\n",
+            "\u001b[0m\n",
+            "\u001b[K\u001b[?25hnpx: installed 22 in 14.933s\n",
+            "your url is: https://itchy-ants-design.loca.lt\n",
+            "2024-06-09 16:19:34.025530: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:9261] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered\n",
+            "2024-06-09 16:19:34.025601: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:607] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered\n",
+            "2024-06-09 16:19:34.027607: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1515] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered\n",
+            "2024-06-09 16:19:36.709186: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT\n",
+            "No model was supplied, defaulted to distilbert/distilbert-base-uncased-finetuned-sst-2-english and revision af0f99b (https://huggingface.co/distilbert/distilbert-base-uncased-finetuned-sst-2-english).\n",
+            "Using a pipeline without specifying a model name and revision in production is not recommended.\n",
+            "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py:1132: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.\n",
+            "  warnings.warn(\n",
+            "No model was supplied, defaulted to distilbert/distilbert-base-uncased-finetuned-sst-2-english and revision af0f99b (https://huggingface.co/distilbert/distilbert-base-uncased-finetuned-sst-2-english).\n",
+            "Using a pipeline without specifying a model name and revision in production is not recommended.\n",
+            "2024-06-09 16:19:47.063 Uncaught app exception\n",
+            "Traceback (most recent call last):\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/elements/image.py\", line 385, in image_to_url\n",
+            "    with open(image, \"rb\") as f:\n",
+            "FileNotFoundError: [Errno 2] No such file or directory: 'team2.jpg'\n",
+            "\n",
+            "During handling of the above exception, another exception occurred:\n",
+            "\n",
+            "Traceback (most recent call last):\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/runtime/memory_media_file_storage.py\", line 164, in _read_file\n",
+            "    with open(filename, \"rb\") as f:\n",
+            "FileNotFoundError: [Errno 2] No such file or directory: 'team2.jpg'\n",
+            "\n",
+            "The above exception was the direct cause of the following exception:\n",
+            "\n",
+            "Traceback (most recent call last):\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/runtime/scriptrunner/script_runner.py\", line 600, in _run_script\n",
+            "    exec(code, module.__dict__)\n",
+            "  File \"/content/app.py\", line 74, in <module>\n",
+            "    st.image(\"team2.jpg\", use_column_width=True)\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/runtime/metrics_util.py\", line 397, in wrapped_func\n",
+            "    result = non_optional_func(*args, **kwargs)\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/elements/image.py\", line 161, in image\n",
+            "    marshall_images(\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/elements/image.py\", line 548, in marshall_images\n",
+            "    proto_img.url = image_to_url(\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/elements/image.py\", line 397, in image_to_url\n",
+            "    url = runtime.get_instance().media_file_mgr.add(image, mimetype, image_id)\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/runtime/media_file_manager.py\", line 224, in add\n",
+            "    file_id = self._storage.load_and_get_id(\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/runtime/memory_media_file_storage.py\", line 115, in load_and_get_id\n",
+            "    file_data = self._read_file(path_or_data)\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/runtime/memory_media_file_storage.py\", line 167, in _read_file\n",
+            "    raise MediaFileStorageError(f\"Error opening '{filename}'\") from ex\n",
+            "streamlit.runtime.media_file_storage.MediaFileStorageError: Error opening 'team2.jpg'\n",
+            "No model was supplied, defaulted to distilbert/distilbert-base-uncased-finetuned-sst-2-english and revision af0f99b (https://huggingface.co/distilbert/distilbert-base-uncased-finetuned-sst-2-english).\n",
+            "Using a pipeline without specifying a model name and revision in production is not recommended.\n",
+            "No model was supplied, defaulted to distilbert/distilbert-base-uncased-finetuned-sst-2-english and revision af0f99b (https://huggingface.co/distilbert/distilbert-base-uncased-finetuned-sst-2-english).\n",
+            "Using a pipeline without specifying a model name and revision in production is not recommended.\n",
+            "No model was supplied, defaulted to distilbert/distilbert-base-uncased-finetuned-sst-2-english and revision af0f99b (https://huggingface.co/distilbert/distilbert-base-uncased-finetuned-sst-2-english).\n",
+            "Using a pipeline without specifying a model name and revision in production is not recommended.\n",
+            "2024-06-09 16:20:13.311 Uncaught app exception\n",
+            "Traceback (most recent call last):\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/elements/image.py\", line 385, in image_to_url\n",
+            "    with open(image, \"rb\") as f:\n",
+            "FileNotFoundError: [Errno 2] No such file or directory: 'team2.jpg'\n",
+            "\n",
+            "During handling of the above exception, another exception occurred:\n",
+            "\n",
+            "Traceback (most recent call last):\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/runtime/memory_media_file_storage.py\", line 164, in _read_file\n",
+            "    with open(filename, \"rb\") as f:\n",
+            "FileNotFoundError: [Errno 2] No such file or directory: 'team2.jpg'\n",
+            "\n",
+            "The above exception was the direct cause of the following exception:\n",
+            "\n",
+            "Traceback (most recent call last):\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/runtime/scriptrunner/script_runner.py\", line 600, in _run_script\n",
+            "    exec(code, module.__dict__)\n",
+            "  File \"/content/app.py\", line 74, in <module>\n",
+            "    st.image(\"team2.jpg\", use_column_width=True)\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/runtime/metrics_util.py\", line 397, in wrapped_func\n",
+            "    result = non_optional_func(*args, **kwargs)\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/elements/image.py\", line 161, in image\n",
+            "    marshall_images(\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/elements/image.py\", line 548, in marshall_images\n",
+            "    proto_img.url = image_to_url(\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/elements/image.py\", line 397, in image_to_url\n",
+            "    url = runtime.get_instance().media_file_mgr.add(image, mimetype, image_id)\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/runtime/media_file_manager.py\", line 224, in add\n",
+            "    file_id = self._storage.load_and_get_id(\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/runtime/memory_media_file_storage.py\", line 115, in load_and_get_id\n",
+            "    file_data = self._read_file(path_or_data)\n",
+            "  File \"/usr/local/lib/python3.10/dist-packages/streamlit/runtime/memory_media_file_storage.py\", line 167, in _read_file\n",
+            "    raise MediaFileStorageError(f\"Error opening '{filename}'\") from ex\n",
+            "streamlit.runtime.media_file_storage.MediaFileStorageError: Error opening 'team2.jpg'\n"
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyMrJFdaE/QXpjj/hTKN2Tjf",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "display_name": "Python 3",
+      "name": "python3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 0
+}
